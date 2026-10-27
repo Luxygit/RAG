@@ -6,4 +6,4 @@ build
 *.egg-info
 .venv
 .DS_Store
-vllm-0.10.1/
+vllm-0.10.1
