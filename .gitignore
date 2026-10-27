@@ -8,3 +8,4 @@ build
 .DS_Store
 vllm-0.10.1
 vllm-0.10.1.zip
+vllm-0.10.1/vllm/model_executor/models/registry.py
