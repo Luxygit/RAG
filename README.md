@@ -1,6 +1,6 @@
 *This project has been created as part of the 42 curriculum by dievarga*
 
-# Fly-in
+# RAG against the machine
 
 ## Description
 
@@ -17,7 +17,7 @@ pygame, otherwise the output is only text on the terminal.
 ### Makefile targets
 
 - make install      : create the virtual environment and install dependencies
-- make run          : run the project with a map file
+- make run          : run the project
 - make debug        : run the project under pdb pythons debugger
 - make clean        : remove caches and temp files
 - make lint         : run flake8 and mypy
