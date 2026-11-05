@@ -1,10 +1,13 @@
 """establishing chunking functions for py and md files"""
 
-from validation import MinimalSource
+
 from pathlib import Path
+import ast
+from src.validation import MinimalSource
 
 
-def chunk_markdown(path: Path) -> list[MinimalSource]:
+def chunk_markdown(path: Path, chunk_size: int = 2000
+        )-> list[MinimalSource]:
     """
     splitting the content of every file into a list of 
     objects including their file_path, start and last index
@@ -19,7 +22,7 @@ def chunk_markdown(path: Path) -> list[MinimalSource]:
         for p in paragraphed:
             first_i = chunk_start
             last_i = curr_pos
-            if len(buffer) + len(p) > 2000:
+            if len(buffer) + len(p) > chunk_size:
                 chunks.append(MinimalSource(
                     file_path=str(path),
                     first_character_index=first_i,
@@ -36,4 +39,57 @@ def chunk_markdown(path: Path) -> list[MinimalSource]:
                         file_path=str(path),
                         first_character_index=chunk_start,
                         last_character_index=curr_pos))
+    return chunks
+
+
+def chunk_py(path: Path, chunk_size: int = 2000
+        ) -> list[MinimalSource]:
+    """using ast lib to get a py file tree and branches"""
+    chunks = []
+    with open(path, "r", encoding="utf-8") as f:
+        lines = f.readlines()
+    total_chars = 0
+    line_map = [0]
+    for line in lines:
+        line_map.append(total_chars)
+        total_chars += len(line)
+    code_string = "".join(lines)
+    tree = ast.parse(code_string)
+    chunk_start = None
+    chunk_end = None
+    for node in tree.body:
+        node_start = line_map[node.lineno]
+        last_line = lines[node.end_lineno - 1]
+        node_end = line_map[node.end_lineno] + len(last_line)
+        # if adding this nodes goes over the limit, flush it
+        if chunk_start is not None and (node_end - chunk_start > chunk_size):
+            chunks.append(
+                    MinimalSource(
+                        file_path=str(path),
+                        first_character_index=chunk_start,
+                        last_character_index=chunk_end,))
+            chunk_start = None
+            chunk_end = None
+        # if node is larger than the limit, slice it
+        if node_end - node_start > chunk_size:
+            curr_split = node_start
+            while curr_split < node_end:
+                split_end = min(curr_split + chunk_size, node_end)
+                chunks.append(
+                        MinimalSource(
+                            file_path=str(path),
+                            first_character_index=curr_split,
+                            last_character_index=split_end,))
+                curr_split = split_end
+        # otherwise we add it to the buffer
+        else:
+            if chunk_start is None:
+                chunk_start = node_start
+            chunk_end = node_end
+    # flush the remaining piece
+    if chunk_start is not None and chunk_end is not None:
+        chunks.append(MinimalSource(
+                            file_path=str(path),
+                            first_character_index=chunk_start,
+                            last_character_index=chunk_end))
     return chunks
