@@ -5,8 +5,7 @@
 ## Description
 
 RAG TODO LIST:
-- fix chunk_markdown max limit just like chunk py
-- Retrieving
+- Retrieving: refactor the CLI to accept commands, tokenize the raw text, build the dictionaries for the BM25 math, and save it all to disk.
 - OUTPUT
 - README
 - Docstrings

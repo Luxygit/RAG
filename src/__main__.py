@@ -26,23 +26,9 @@ def main() -> None:
             ]
     for path in paths:
         if path.suffix == ".md":
-            #all_chunks.extend(chunk_markdown(path, args.max_chunk_size))
-            continue
+            all_chunks.extend(chunk_markdown(path, args.max_chunk_size))
         else:
             all_chunks.extend(chunk_py(path, args.max_chunk_size))
-    if all_chunks:
-        sample = all_chunks[6]
-        print(f"File: {sample.file_path}")
-        print(
-            f"Bounds: [{sample.first_character_index}:"
-            f"{sample.last_character_index}]"
-        )
-        with open(sample.file_path, "r", encoding="utf-8") as f:
-            content = f.read()
-            chunk_text = content[
-                sample.first_character_index:sample.last_character_index
-            ]
-            print(f"Content preview:\n{chunk_text}...")
     print(f"Total chunks: {len(all_chunks)}")
 
 if __name__ == "__main__":

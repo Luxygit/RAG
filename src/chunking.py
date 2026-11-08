@@ -9,36 +9,64 @@ from src.validation import MinimalSource
 def chunk_markdown(path: Path, chunk_size: int = 2000
         )-> list[MinimalSource]:
     """
-    splitting the content of every file into a list of 
-    objects including their file_path, start and last index
+    splitting the content of every file by paragraphs using indexes
+    into a list of objects including their file_path, start and last index
+    chunk_start is the starting index of the current buffer
+    chunk_end the end index of the current buffer
+    curr_pos tracks the position in file during the loop
+    p_start p_end the boundaries of the current paragraph
     """
     chunks = []
-    buffer = ""
-    with open(path) as f:
+    with open(path, encoding="utf-8") as f:
         stringed = f.read()
-        paragraphed = stringed.split("\n\n")
-        curr_pos = 0
-        chunk_start = 0
-        for p in paragraphed:
-            first_i = chunk_start
-            last_i = curr_pos
-            if len(buffer) + len(p) > chunk_size:
-                chunks.append(MinimalSource(
-                    file_path=str(path),
-                    first_character_index=first_i,
-                    last_character_index=last_i))
-                chunk_start = curr_pos
-                buffer = p
-            else:
-                if buffer:
-                    buffer += "\n\n"
-                buffer += p
-            curr_pos += len(p) + 2
-        if buffer:
-            chunks.append(MinimalSource(
+    paragraphed = stringed.split("\n\n")
+    curr_pos = 0
+    chunk_start = None
+    chunk_end = None
+    for p in paragraphed:
+        p_start = curr_pos
+        p_end = curr_pos + len(p)
+        # flushing chunk if exceeding
+        if (chunk_start is not None
+            and (p_end - chunk_start > chunk_size)):
+            chunks.append(
+                    MinimalSource(
                         file_path=str(path),
                         first_character_index=chunk_start,
-                        last_character_index=curr_pos))
+                        last_character_index=chunk_end,
+                        )
+                    )
+            chunk_start = None
+            chunk_end = None
+        # slice if the p itself exceeds
+        if p_end - p_start > chunk_size:
+            curr_split = p_start
+            while curr_split < p_end:
+                split_end = min(curr_split + chunk_size, p_end)
+                chunks.append(
+                        MinimalSource(
+                            file_path=str(path),
+                            first_character_index=curr_split,
+                            last_character_index=split_end,
+                            )
+                        )
+                curr_split = split_end
+        # buffer if we are still under the limit
+        else:
+            if chunk_start is None:
+                chunk_start = p_start
+            chunk_end = p_end
+        # advancing the position for the \n\n
+        curr_pos += len(p) + 2
+    # flushing leftovers after loop
+    if chunk_start is not None and chunk_end is not None:
+        chunks.append(
+                MinimalSource(
+                    file_path=str(path),
+                    first_character_index=chunk_start,
+                    last_character_index=chunk_end,
+                    )
+                )
     return chunks
 
 
