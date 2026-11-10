@@ -26,7 +26,7 @@ class AnsweredQuestion(UnansweredQuestion):
 
 class RagDataset(BaseModel):
     """represents a set of RAG questions"""
-    rag_iquestions: list[AnsweredQuestion | UnansweredQuestion]
+    rag_questions: list[AnsweredQuestion | UnansweredQuestion]
 
 
 class MinimalSearchResults(BaseModel):

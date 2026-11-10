@@ -2,12 +2,15 @@
 
 
 import fire
+from tqdm import tqdm
 from pathlib import Path
 from src.chunking import chunk_markdown, chunk_py
 from src.indexing import build_and_save_index
 from src.retrieving import load_index, search_index
-from src.validating import (MinimalSource,
-MinimalSearchResults, StudentSearchResults)
+from src.validating import (
+        MinimalSource,
+        MinimalSearchResults,
+        StudentSearchResults)
 
 
 def index(max_chunk_size: int = 2000) -> None:
@@ -34,13 +37,13 @@ def index(max_chunk_size: int = 2000) -> None:
     print(f"Saved processed {len(all_chunks)} chunks")
 
 
-def search(query:str, k: int = 5) -> None:
+def search(query: str, k: int = 5) -> None:
     """"""
     target_dir = Path("data/processed/bm25_index.json")
     index_data = load_index(target_dir)
     # searchindex returns a list of raw dicts[MinimalSource]
     results = search_index(query, index_data, k)
-    #
+    # 
     retrieved_sources = [MinimalSource(**chunk) for chunk in results]
     min_search = MinimalSearchResults(
             question_id="q1",
@@ -53,11 +56,22 @@ def search(query:str, k: int = 5) -> None:
     print(student_res.model_dump_json(indent=4))
 
 
+def search_dataset(dataset_path: str, k: int, save_directory: str) -> None:
+    with open(dataset_path, "r", encoding="utf-8") as f:
+        dataset = json.load(f)
+    for i in tqdm(desc="Processing data sets"):
+        for d in dataset:
+            search_index(d[question], d[question_id], k)
+    save_directory.mkdir(parents=True, exist_ok=True)
+    with open(save_directory / dataset.name)
+
+
 def main() -> None:
     """initialising master list of chunks and calling the chunk functions"""
     fire.Fire({
         "index": index,
-        "search": search
+        "search": search,
+        "search_dataset": search_dataset
         })
 
 if __name__ == "__main__":
