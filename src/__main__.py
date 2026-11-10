@@ -1,9 +1,14 @@
 """main execution of the module"""
 
+
 import fire
 from pathlib import Path
 from src.chunking import chunk_markdown, chunk_py
 from src.indexing import build_and_save_index
+from src.retrieving import load_index, search_index
+from src.validating import (MinimalSource,
+MinimalSearchResults, StudentSearchResults)
+
 
 def index(max_chunk_size: int = 2000) -> None:
     """executes chunking and indexin pipeline"""
@@ -29,10 +34,31 @@ def index(max_chunk_size: int = 2000) -> None:
     print(f"Saved processed {len(all_chunks)} chunks")
 
 
+def search(query:str, k: int = 5) -> None:
+    """"""
+    target_dir = Path("data/processed/bm25_index.json")
+    index_data = load_index(target_dir)
+    # searchindex returns a list of raw dicts[MinimalSource]
+    results = search_index(query, index_data, k)
+    #
+    retrieved_sources = [MinimalSource(**chunk) for chunk in results]
+    min_search = MinimalSearchResults(
+            question_id="q1",
+            question=query,
+            retrieved_sources=retrieved_sources)
+    student_res = StudentSearchResults(
+            search_results=[min_search],
+            k=k
+            )
+    print(student_res.model_dump_json(indent=4))
+
+
 def main() -> None:
     """initialising master list of chunks and calling the chunk functions"""
-    fire.Fire({"index": index})
-
+    fire.Fire({
+        "index": index,
+        "search": search
+        })
 
 if __name__ == "__main__":
     main()

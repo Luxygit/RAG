@@ -3,7 +3,7 @@
 
 import json
 from pathlib import Path
-from src.validation import MinimalSource
+from src.validating import MinimalSource
 
 
 def tokenise(text: str) -> list[str]:
@@ -33,7 +33,8 @@ def build_and_save_index(chunks: list[MinimalSource], save_dir: Path) -> None:
     for chunk_id, chunk in enumerate(chunks):
         with open(chunk.file_path, "r", encoding="utf-8") as f:
             content = f.read()
-            sliced = content[chunk.first_character_index:chunk.last_character_index]
+            sliced = (content[
+                chunk.first_character_index:chunk.last_character_index])
             tokens_list = tokenise(sliced)
             doc_lengths[chunk_id] = len(tokens_list)
             total_tokens += len(tokens_list)
@@ -60,4 +61,3 @@ def build_and_save_index(chunks: list[MinimalSource], save_dir: Path) -> None:
     save_dir.mkdir(parents=True, exist_ok=True)
     with open(save_dir / "bm25_index.json", "w", encoding="utf-8") as fj:
         json.dump(index_data, fj)
-

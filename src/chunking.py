@@ -3,11 +3,13 @@
 
 from pathlib import Path
 import ast
-from src.validation import MinimalSource
+from src.validating import MinimalSource
 
 
-def chunk_markdown(path: Path, chunk_size: int = 2000
-        )-> list[MinimalSource]:
+def chunk_markdown(
+        path: Path,
+        chunk_size: int = 2000
+        ) -> list[MinimalSource]:
     """
     splitting the content of every file by paragraphs using indexes
     into a list of objects including their file_path, start and last index
@@ -28,7 +30,7 @@ def chunk_markdown(path: Path, chunk_size: int = 2000
         p_end = curr_pos + len(p)
         # flushing chunk if exceeding
         if (chunk_start is not None
-            and (p_end - chunk_start > chunk_size)):
+                and (p_end - chunk_start > chunk_size)):
             chunks.append(
                     MinimalSource(
                         file_path=str(path),
@@ -70,7 +72,9 @@ def chunk_markdown(path: Path, chunk_size: int = 2000
     return chunks
 
 
-def chunk_py(path: Path, chunk_size: int = 2000
+def chunk_py(
+        path: Path,
+        chunk_size: int = 2000
         ) -> list[MinimalSource]:
     """using ast lib to get a py file tree and branches"""
     chunks = []

@@ -9,8 +9,9 @@ RAG TODO LIST:
 - OUTPUT
 - README
 - Docstrings
-- flake8 
-- mypy 
+- flake8 . add .ignore dirs src
+- mypy . add .ignore dirs sr
+- Make run needs to run the whole pipeline?
 
 ## Instructions
 

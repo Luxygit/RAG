@@ -1,5 +1,6 @@
 """validating via pydantic models"""
 
+
 from pydantic import BaseModel, ValidationError, Field
 import uuid
 
@@ -32,7 +33,7 @@ class MinimalSearchResults(BaseModel):
     """search results"""
     question_id: str
     question: str
-    retrieved_sourcs: list[MinimalSource]
+    retrieved_sources: list[MinimalSource]
 
 
 class MinimalAnswer(MinimalSearchResults):
