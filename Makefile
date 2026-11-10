@@ -7,7 +7,9 @@ all: install run
 install:
 	uv sync
 run: install
-	uv run python -m src
+	uv run python -m src index
+	uv run python -m src search "How to configure the OpenAI server" -k 5
+	# add all required
 
 debug: install
 	uv run python -m pdb src

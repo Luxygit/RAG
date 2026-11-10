@@ -52,7 +52,7 @@ def build_and_save_index(chunks: list[MinimalSource], save_dir: Path) -> None:
     # serialising the pydantic chunks object so it can be output to JSON
     index_data = {
             "chunks": [chunk.model_dump() for chunk in chunks],
-            "doc_lenghts": doc_lenghts,
+            "doc_lengths": doc_lengths,
             "avgdl": avgdl,
             "doc_freqs": doc_freqs,
             "term_freqs": term_freqs,
