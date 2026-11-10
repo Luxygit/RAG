@@ -7,9 +7,9 @@ from src.chunking import chunk_markdown, chunk_py
 def index(max_chunk_size: int = 2000) -> None:
     """executes chunking and indexin pipeline"""
     all_chunks = []
-    # target_dir = Path("data/raw")
+    target_dir = Path("data/raw")
     # for testing only!
-    target_dir = Path(".")
+    # target_dir = Path(".")
     paths_md = list(target_dir.rglob("*.md"))
     paths_py = list(target_dir.rglob("*.py"))
     paths = [
