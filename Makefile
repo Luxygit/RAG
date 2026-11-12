@@ -1,7 +1,4 @@
 
-SRC			= main.py
-VENV		= .venv
-
 all: install run
 
 install:
@@ -15,7 +12,7 @@ debug: install
 	uv run python -m pdb src
 
 clean:
-	rm -rf __pycache__ .mypy_cache dist build *.egg-info $(VENV)
+	rm -rf __pycache__ .mypy_cache dist build *.egg-info
 
 lint:
 	flake8 .

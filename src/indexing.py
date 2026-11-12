@@ -2,6 +2,7 @@
 
 
 import json
+from tqdm import tqdm
 from pathlib import Path
 from src.validating import MinimalSource
 
@@ -30,7 +31,10 @@ def build_and_save_index(chunks: list[MinimalSource], save_dir: Path) -> None:
     term_freqs: dict[str, dict[int, int]] = {}
     # sum of all words, to calc average document length
     total_tokens = 0
-    for chunk_id, chunk in enumerate(chunks):
+    for chunk_id, chunk in tqdm(
+            enumerate(chunks),
+            total=len(chunks),
+            desc="BM25 Indexing"):
         with open(chunk.file_path, "r", encoding="utf-8") as f:
             content = f.read()
             sliced = (content[
