@@ -1,4 +1,6 @@
 
+VENV = .venv/bin
+
 all: install run
 
 install:
@@ -15,11 +17,11 @@ clean:
 	rm -rf __pycache__ .mypy_cache dist build *.egg-info
 
 lint:
-	flake8 .
-	mypy . --warn-return-any --warn-unused-ignores --ignore-missing-imports --disallow-untyped-defs --check-untyped-defs
+	$(VENV)/flake8 .
+	$(VENV)/mypy . --warn-return-any --warn-unused-ignores --ignore-missing-imports --disallow-untyped-defs --check-untyped-defs
 
 lint-strict:
-	flake8 .
-	mypy . --strict
+	$(VENV)/flake8 .
+	$(VENV)/mypy . --strict
 
 .PHONY: all install run debug clean lint lint-strict

@@ -1,7 +1,7 @@
 """validating via pydantic models"""
 
 
-from pydantic import BaseModel, ValidationError, Field
+from pydantic import BaseModel, Field
 import uuid
 
 
@@ -31,8 +31,8 @@ class RagDataset(BaseModel):
 
 class MinimalSearchResults(BaseModel):
     """search results"""
-    question_id: str
-    question: str
+    question_id: str | None
+    question: str | None
     retrieved_sources: list[MinimalSource]
 
 

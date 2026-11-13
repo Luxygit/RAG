@@ -8,6 +8,7 @@ from pathlib import Path
 from src.chunking import chunk_markdown, chunk_py
 from src.indexing import build_and_save_index
 from src.retrieving import load_index, search_index
+from src.evaluating import evaluate
 from src.validating import (
         MinimalSource,
         MinimalSearchResults,
@@ -40,7 +41,6 @@ def search(query: str, k: int = 5) -> None:
     index_data = load_index(target_dir)
     # searchindex returns a list of raw dicts[MinimalSource]
     results = search_index(query, index_data, k)
-    # 
     retrieved_sources = [MinimalSource(**chunk) for chunk in results]
     min_search = MinimalSearchResults(
             question_id="q1",
@@ -63,7 +63,7 @@ def search_dataset(dataset_path: str, k: int, save_directory: str) -> None:
     search_results_list = []
     # looping through questions, either raw lists or dicts
     questions = dataset.get("rag_questions",
-            dataset) if isinstance(dataset, dict) else dataset
+                            dataset) if isinstance(dataset, dict) else dataset
     for item in tqdm(questions, desc="Searching datasets"):
         q_id = item.get("question_id", "q1")
         q_text = item.get("question", "")
@@ -85,7 +85,7 @@ def search_dataset(dataset_path: str, k: int, save_directory: str) -> None:
     save_dir.mkdir(parents=True, exist_ok=True)
     output_file = save_dir / Path(dataset_path).name
     with open(output_file, "w", encoding="utf-8") as f:
-            f.write(student_res.model_dump_json(indent=4))
+        f.write(student_res.model_dump_json(indent=4))
     print(f"Saved student_search_results to {output_file}")
 
 
@@ -97,6 +97,7 @@ def main() -> None:
         "search_dataset": search_dataset,
         "evaluate": evaluate,
         })
+
 
 if __name__ == "__main__":
     main()
