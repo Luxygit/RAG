@@ -12,11 +12,12 @@ from src.validating import MinimalSource, MinimalSearchResults
 def load_index(file_path: Path) -> dict[str, Any]:
     """opening our content index file back to memory"""
     with open(file_path, "r", encoding="utf-8") as f:
-        res = json.load(f)
+        res: dict[str, Any] = json.load(f)
     return res
 
 
-def search_index(query: str, index_data: dict[str, Any], k: int) -> list[Any]:
+def search_index(query: str, index_data: dict[str, Any], k: int
+                 ) -> list[dict[str, Any]]:
     """bm25 scoring engine"""
     # turning the query into a clean string of words
     tk_query = tokenise(query)
@@ -54,9 +55,9 @@ def search_index(query: str, index_data: dict[str, Any], k: int) -> list[Any]:
 
 
 def ranking_chunks(sources: list[MinimalSource]) -> MinimalSearchResults:
-    res = {
-            "question_id": None,
-            "question": None,
-            "retrieved_sources": sources,
-            }
-    return res
+    """"""
+    return MinimalSearchResults(
+           question_id=None,
+           question=None,
+           retrieved_sources=sources,
+           )

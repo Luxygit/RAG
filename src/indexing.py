@@ -2,6 +2,7 @@
 
 
 import json
+import re
 from tqdm import tqdm
 from pathlib import Path
 from src.validating import MinimalSource
@@ -9,6 +10,7 @@ from src.validating import MinimalSource
 
 def tokenise(text: str) -> list[str]:
     """turning text into lowercase alphannum words"""
+    raw_words = re.findall(r"[a-zA-Z0-9]+", text)
     clean_chars = []
     for c in text:
         if c.isalnum():

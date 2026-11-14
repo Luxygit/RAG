@@ -1,6 +1,7 @@
 """"""
 
 
+from typing import Any
 from pathlib import Path
 import json
 
@@ -29,7 +30,7 @@ def evaluate(student_search_results_path: Path, dataset_path: Path) -> float:
         ground_res = json.load(f)
     correct_count = 0
     found_match = False
-    truth_map = {}
+    truth_map: dict[str, list[dict[str, Any]]] = {}
     golden_list = ground_res["rag_questions"]
     student_list = student_res["search_results"]
     for item in golden_list:

@@ -21,12 +21,13 @@ def index(max_chunk_size: int = 2000) -> None:
     target_dir = Path("data/raw/")
     paths_md = list(target_dir.rglob("*.md"))
     paths_py = list(target_dir.rglob("*.py"))
+    paths_txt = list(target_dir.rglob("*.txt"))
     paths = [
-            p for p in (paths_md + paths_py)
+            p for p in (paths_md + paths_py + paths_txt)
             if ".venv" not in p.parts and ".git" not in p.parts
             ]
     for path in tqdm(paths, desc="Chunking raw files"):
-        if path.suffix == ".md":
+        if path.suffix in{".md", ".txt"}:
             all_chunks.extend(chunk_markdown(path, max_chunk_size))
         else:
             all_chunks.extend(chunk_py(path, max_chunk_size))

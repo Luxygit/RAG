@@ -23,14 +23,15 @@ def chunk_markdown(
         stringed = f.read()
     paragraphed = stringed.split("\n\n")
     curr_pos = 0
-    chunk_start = None
-    chunk_end = None
+    chunk_start: int | None = None
+    chunk_end: int | None = None
     for p in paragraphed:
         p_start = curr_pos
         p_end = curr_pos + len(p)
         # flushing chunk if exceeding
         if (chunk_start is not None
-                and (p_end - chunk_start > chunk_size)):
+           and chunk_end is not None
+           and (p_end - chunk_start > chunk_size)):
             chunks.append(
                     MinimalSource(
                         file_path=str(path),
@@ -90,16 +91,23 @@ def chunk_py(
     chunk_start = None
     chunk_end = None
     for node in tree.body:
+        if node.end_lineno is None:
+            continue
         node_start = line_map[node.lineno]
         last_line = lines[node.end_lineno - 1]
         node_end = line_map[node.end_lineno] + len(last_line)
         # if adding this nodes goes over the limit, flush it
-        if chunk_start is not None and (node_end - chunk_start > chunk_size):
+        if (
+                chunk_start is not None
+                and chunk_end is not None
+                and (node_end - chunk_start > chunk_size)
+                ):
             chunks.append(
                     MinimalSource(
                         file_path=str(path),
                         first_character_index=chunk_start,
-                        last_character_index=chunk_end,))
+                        last_character_index=chunk_end,
+                        ))
             chunk_start = None
             chunk_end = None
         # if node is larger than the limit, slice it
