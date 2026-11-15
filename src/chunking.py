@@ -47,10 +47,11 @@ def chunk_markdown(
     for p in paragraphed:
         p_start = curr_pos
         p_end = curr_pos + len(p)
+        is_heading = p.lstrip().startswith("#")
         # flushing chunk if exceeding
         if (chunk_start is not None
            and chunk_end is not None
-           and (p_end - chunk_start > chunk_size)):
+           and (p_end - chunk_start > chunk_size or is_heading)):
             chunks.append(
                     MinimalSource(
                         file_path=str(path),

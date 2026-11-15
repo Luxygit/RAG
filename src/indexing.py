@@ -8,12 +8,22 @@ from pathlib import Path
 from src.validating import MinimalSource
 
 
+STOPWORDS: frozenset[str] = frozenset({
+    "a", "an", "and", "are", "as", "at", "by", "can", "do",
+    "for", "from", "how", "i", "if", "in", "into", "is", "it", "of",
+    "on", "or", "should", "that", "the", "to", "use", "using", " vllm",
+    "what", "when", "where", "which", "with", "you", "your",
+    })
+
+
 def tokenise(text: str) -> list[str]:
     """turning text into lowercase alphannum words"""
     raw_words = re.findall(r"[a-zA-Z0-9]+", text)
     tokens: list[str] = []
     for word in raw_words:
         lower_word = word.lower()
+        if lower_word in STOPWORDS or len(lower_word) < 2:
+            continue
         tokens.append(lower_word)
         split_camel = re.sub(r"([a-z0-9])([A-Z])", r"\1 \2", word)
         split_camel = re.sub(
