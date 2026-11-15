@@ -1,9 +1,28 @@
 """establishing chunking functions for py and md files"""
 
 
-from pathlib import Path
 import ast
+from pathlib import Path
 from src.validating import MinimalSource
+
+
+def _flatten_large_classes(
+    nodes: list[ast.stmt],
+    line_map: list[int],
+    lines: list[str],
+    chunk_size: int,
+   ) -> list[ast.stmt]:
+    """"""
+    flattened: list[ast.stmt] = []
+    for node in nodes:
+        if isinstance(node, ast.ClassDef) and node.end_lineno is not None:
+            start = line_map[node.lineno]
+            end = line_map[node.end_lineno] + len(lines[node.end_lineno - 1])
+            if end - start > chunk_size and node.body:
+                flattened.extend(node.body)
+                continue
+        flattened.append(node)
+    return flattened
 
 
 def chunk_markdown(
@@ -90,7 +109,10 @@ def chunk_py(
     tree = ast.parse(code_string)
     chunk_start = None
     chunk_end = None
-    for node in tree.body:
+    nodes = _flatten_large_classes(
+            tree.body, line_map, lines, chunk_size
+            )
+    for node in nodes:
         if node.end_lineno is None:
             continue
         node_start = line_map[node.lineno]

@@ -13,6 +13,7 @@ dependencies = [
 ]
 [tool.mypy]
 files = ["src"]
+exclude = ["data/"]
 [tool.flake8]
 extend-exclude = [
     ".git",

@@ -27,7 +27,7 @@ def index(max_chunk_size: int = 2000) -> None:
             if ".venv" not in p.parts and ".git" not in p.parts
             ]
     for path in tqdm(paths, desc="Chunking raw files"):
-        if path.suffix in{".md", ".txt"}:
+        if path.suffix in {".md", ".txt"}:
             all_chunks.extend(chunk_markdown(path, max_chunk_size))
         else:
             all_chunks.extend(chunk_py(path, max_chunk_size))

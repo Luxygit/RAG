@@ -1,4 +1,4 @@
-""""""
+"""indexing the raw data into accesible retrievable number ids"""
 
 
 import json
@@ -11,14 +11,17 @@ from src.validating import MinimalSource
 def tokenise(text: str) -> list[str]:
     """turning text into lowercase alphannum words"""
     raw_words = re.findall(r"[a-zA-Z0-9]+", text)
-    clean_chars = []
-    for c in text:
-        if c.isalnum():
-            clean_chars.append(c.lower())
-        else:
-            clean_chars.append(" ")
-    res = "".join(clean_chars)
-    return res.split()
+    tokens: list[str] = []
+    for word in raw_words:
+        lower_word = word.lower()
+        tokens.append(lower_word)
+        split_camel = re.sub(r"([a-z0-9])([A-Z])", r"\1 \2", word)
+        split_camel = re.sub(
+                r"([A-Z]+)([A-Z][a-z])", r"\1 \2", split_camel)
+        sub_words = split_camel.lower().split()
+        if len(sub_words) > 1:
+            tokens.extend(sub_words)
+    return tokens
 
 
 def build_and_save_index(chunks: list[MinimalSource], save_dir: Path) -> None:
@@ -42,6 +45,14 @@ def build_and_save_index(chunks: list[MinimalSource], save_dir: Path) -> None:
             sliced = (content[
                 chunk.first_character_index:chunk.last_character_index])
             tokens_list = tokenise(sliced)
+            parts = Path(chunk.file_path).parts
+            rel_parts = (
+                    parts[parts.index("raw") + 2:]
+                    if "raw" in parts
+                    else parts[-3:]
+                    )
+            path_tokens = tokenise(" ".join(rel_parts))
+            tokens_list.extend(path_tokens * 2)
             doc_lengths[chunk_id] = len(tokens_list)
             total_tokens += len(tokens_list)
             chunk_freq: dict[str, int] = {}
