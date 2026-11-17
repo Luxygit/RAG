@@ -1,5 +1,5 @@
 
-VENV = .venv/bin
+VENV = $(VIRTUAL_ENV).venv/bin
 
 all: install run
 
