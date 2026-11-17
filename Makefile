@@ -1,10 +1,11 @@
 
-VENV = $(VIRTUAL_ENV).venv/bin
+VENV = $(HOME)/goinfre/my_env/bin
 
 all: install run
 
 install:
 	uv sync
+
 run: install
 	uv run python -m src index
 	uv run python -m src search "How to configure the OpenAI server" -k 5

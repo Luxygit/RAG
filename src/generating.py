@@ -47,21 +47,24 @@ def load_model(model_name: str = "Qwen/Qwen3-0.6B") -> tuple[Any, Any]:
     # loading tokenizer
     tokenizer = AutoTokenizer.from_pretrained(model_name)
     # setting device in case gpu or cpu are avail, and the floats to handle
-    device = "cpu"
+    device = torch.device("cpu")
     dtype = torch.float32
     if torch.cuda.is_available():
-        device = "cuda"
+        device = torch.device("cuda")
         dtype = torch.float16
     # loading weights
-    model = AutoModelForCausalLM.from_pretrained(model_name, torch_dtype=dtype)
-    # moving weights to device
-    model.to(device)
-    # what is this doing
+    model = AutoModelForCausalLM.from_pretrained(
+            model_name,
+            torch_dtype=dtype,
+            device_map=device,
+            )
+    # switches model from training to evaluation / inference
     model.eval()
     return (tokenizer, model)
 
 
-def generate_answer(question: str,
+def generate_answer(
+        question: str,
         sources: list[MinimalSource],
         tokenizer: Any,
         model: Any

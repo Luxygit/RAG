@@ -47,7 +47,7 @@ class StudentSearchResults(BaseModel):
     k: int
 
 
-class StudentSearchResultsAndAnswers(BaseModel):
+class StudentSearchResultsAndAnswer(BaseModel):
     """this will be a search result with answers"""
     search_results: list[MinimalAnswer]
     k: int
