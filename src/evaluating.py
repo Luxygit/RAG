@@ -24,15 +24,27 @@ def calculate_iou(start1: int, end1: int, start2: int, end2: int) -> float:
 
 def evaluate(student_search_results_path: Path, dataset_path: Path) -> float:
     """gets both result jsons and compares them using IoU"""
-    with open(student_search_results_path, "r", encoding="utf-8") as f:
-        student_res = json.load(f)
-    with open(dataset_path, "r", encoding="utf-8") as f:
-        ground_res = json.load(f)
+    student_path = Path(student_search_results_path)
+    ground_path = Path(dataset_path)
+    if not student_path.is_file() or not ground_path.is_file():
+        return 0.0
+    try:
+        with open(student_path, "r", encoding="utf-8") as f:
+            student_res = json.load(f)
+        with open(ground_path, "r", encoding="utf-8") as f:
+            ground_res = json.load(f)
+    except Exception as e:
+        print(e)
+        return 0.0
     correct_count = 0
     found_match = False
     truth_map: dict[str, list[dict[str, Any]]] = {}
-    golden_list = ground_res["rag_questions"]
-    student_list = student_res["search_results"]
+    try:
+        golden_list = ground_res["rag_questions"]
+        student_list = student_res["search_results"]
+    except Exception as e:
+        print(e)
+        return 0.0
     for item in golden_list:
         truth_map[item["question_id"]] = item["sources"]
     for st_res in student_list:

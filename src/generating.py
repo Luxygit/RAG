@@ -44,23 +44,27 @@ def build_context(sources: list[MinimalSource], max_chars: int = 5000) -> str:
 
 def load_model(model_name: str = "Qwen/Qwen3-0.6B") -> tuple[Any, Any]:
     """"""
-    # loading tokenizer
-    tokenizer = AutoTokenizer.from_pretrained(model_name)
-    # setting device in case gpu or cpu are avail, and the floats to handle
-    device = torch.device("cpu")
-    dtype = torch.float32
-    if torch.cuda.is_available():
-        device = torch.device("cuda")
-        dtype = torch.float16
-    # loading weights
-    model = AutoModelForCausalLM.from_pretrained(
-            model_name,
-            torch_dtype=dtype,
-            device_map=device,
-            )
-    # switches model from training to evaluation / inference
-    model.eval()
-    return (tokenizer, model)
+    try:
+        # loading tokenizer
+        tokenizer = AutoTokenizer.from_pretrained(model_name)
+        # setting device in case gpu or cpu are avail, and the floats to handle
+        device = torch.device("cpu")
+        dtype = torch.float32
+        if torch.cuda.is_available():
+            device = torch.device("cuda")
+            dtype = torch.float16
+        # loading weights
+        model = AutoModelForCausalLM.from_pretrained(
+                model_name,
+                torch_dtype=dtype,
+                device_map=device,
+                )
+        # switches model from training to evaluation / inference
+        model.eval()
+        return (tokenizer, model)
+    except Exception as e:
+        print(e)
+        return (0, 0)
 
 
 def generate_answer(
@@ -78,7 +82,7 @@ def generate_answer(
     messages: list[dict[str, str]] = [
             {
                 "role": "system",
-                "content": context
+                "content": "Answer concicsely using ONLY the provided context"
                 },
             {
                 "role": "user",
@@ -95,8 +99,14 @@ def generate_answer(
     # prompt to pytorch tensors
     inputs = tokenizer(prompt, return_tensors="pt").to(model.device)
     # do_sample keeps answers grounded, greedy decoding
-    with torch.no_grad():
-        outputs = model.generate(**inputs, max_new_tokens=256, do_sample=False)
+    try:
+        with torch.no_grad():
+            outputs = model.generate(**inputs,
+                                     max_new_tokens=256,
+                                     do_sample=False)
+    except Exception as e:
+        print(e)
+        return ""
     prompt_len = inputs["input_ids"].shape[1]
     new_tokens = outputs[0][prompt_len:]
     answer: str = tokenizer.decode(

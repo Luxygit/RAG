@@ -11,8 +11,14 @@ from src.validating import MinimalSource, MinimalSearchResults
 
 def load_index(file_path: Path) -> dict[str, Any]:
     """opening our content index file back to memory"""
-    with open(file_path, "r", encoding="utf-8") as f:
-        res: dict[str, Any] = json.load(f)
+    if not file_path.is_file():
+        return {}
+    try:
+        with open(file_path, "r", encoding="utf-8") as f:
+            res: dict[str, Any] = json.load(f)
+    except Exception as e:
+        print(e)
+        return {}
     return res
 
 
@@ -27,6 +33,8 @@ def search_index(query: str, index_data: dict[str, Any], k: int
     term_freqs = index_data["term_freqs"]
     chunks = index_data["chunks"]
     N = len(chunks)
+    if k <= 0 or not chunks or avgdl <= 0:
+        return []
     # control term freq saturation, so words dont scale infinitely
     k1 = 1.5
     # controls how we penalise long doc lengths

@@ -21,8 +21,13 @@ from src.generating import generate_answer, load_model
 
 def index(max_chunk_size: int = 2000) -> None:
     """executes chunking and indexin pipeline"""
+    if max_chunk_size <= 0:
+        return
     all_chunks = []
     target_dir = Path("data/raw/")
+    if not target_dir.is_dir():
+        print("Invalid target folder path")
+        return
     paths_py = list(target_dir.rglob("*.py"))
     paths_txt = list(target_dir.rglob("*.txt"))
     paths_md = list(target_dir.rglob("*.md"))
@@ -46,12 +51,16 @@ def search(query: str, k: int = 5) -> None:
         print("No valid query or no valid k int")
         return
     target_dir = Path("data/processed/bm25_index.json")
-    if not target_dir.is_file():
+    if not target_dir.is_dir():
         print("No valid target path")
         return
-    index_data = load_index(target_dir)
+    try:
+        index_data = load_index(target_dir)
     # searchindex returns a list of raw dicts[MinimalSource]
-    results = search_index(query, index_data, k)
+        results = search_index(query, index_data, k)
+    except Exception as e:
+        print(e)
+        return
     # expplain this
     retrieved_sources = [MinimalSource(**chunk) for chunk in results]
     min_search = MinimalSearchResults(
@@ -68,6 +77,9 @@ def search(query: str, k: int = 5) -> None:
 def search_dataset(dataset_path: str, k: int, save_directory: str) -> None:
     """runs search over a dataset and saves results to json"""
     # loading dataset and bm25 index
+    if k <= 0:
+        print("k should be a positive int")
+        return
     try:
         with open(dataset_path, "r", encoding="utf-8") as f:
             dataset = json.load(f)
@@ -75,7 +87,14 @@ def search_dataset(dataset_path: str, k: int, save_directory: str) -> None:
         print("Error opening file")
         return
     index_path = Path("data/processed/bm25_index.json")
-    index_data = load_index(index_path)
+    if not index_path.is_file():
+        print("invalid index path")
+        return
+    try:
+        index_data = load_index(index_path)
+    except Exception as e:
+        print(e)
+        return
     search_results_list = []
     # looping through questions, either raw lists or dicts
     questions = dataset.get(
@@ -98,12 +117,16 @@ def search_dataset(dataset_path: str, k: int, save_directory: str) -> None:
             search_results=search_results_list,
             k=k)
     # turning string into Path object
-    save_dir = Path(save_directory)
-    save_dir.mkdir(parents=True, exist_ok=True)
-    output_file = save_dir / Path(dataset_path).name
-    with open(output_file, "w", encoding="utf-8") as f:
-        f.write(student_res.model_dump_json(indent=4))
-    print(f"Saved student_search_results to {output_file}")
+    try:
+        save_dir = Path(save_directory)
+        save_dir.mkdir(parents=True, exist_ok=True)
+        output_file = save_dir / Path(dataset_path).name
+        with open(output_file, "w", encoding="utf-8") as f:
+            f.write(student_res.model_dump_json(indent=4))
+        print(f"Saved student_search_results to {output_file}")
+    except Exception as e:
+        print(e)
+        return
 
 
 def answer(query: str, k: int = 5) -> None:
@@ -115,11 +138,15 @@ def answer(query: str, k: int = 5) -> None:
     if not index_path.is_file():
         print("No valid processed file path")
         return
-    index_data = load_index(index_path)
-    src = search_index(query, index_data, k)
-    sources = [MinimalSource(**chunk) for chunk in src]
-    tokenizer, model = load_model()
-    gen_ans = generate_answer(query, sources, tokenizer, model)
+    try:
+        index_data = load_index(index_path)
+        src = search_index(query, index_data, k)
+        sources = [MinimalSource(**chunk) for chunk in src]
+        tokenizer, model = load_model()
+        gen_ans = generate_answer(query, sources, tokenizer, model)
+    except Exception as e:
+        print(e)
+        return
     ans = MinimalAnswer(
             question_id="q1",
             question=query,

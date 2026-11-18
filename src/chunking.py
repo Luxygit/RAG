@@ -37,9 +37,15 @@ def chunk_markdown(
     curr_pos tracks the position in file during the loop
     p_start p_end the boundaries of the current paragraph
     """
+    if chunk_size <= 0:
+        return []
     chunks = []
-    with open(path, encoding="utf-8") as f:
-        stringed = f.read()
+    try:
+        with open(path, encoding="utf-8") as f:
+            stringed = f.read()
+    except Exception as e:
+        print(e)
+        return []
     paragraphed = stringed.split("\n\n")
     curr_pos = 0
     chunk_start: int | None = None
@@ -98,16 +104,26 @@ def chunk_py(
         chunk_size: int = 2000
         ) -> list[MinimalSource]:
     """using ast lib to get a py file tree and branches"""
+    if chunk_size <= 0:
+        return []
     chunks = []
-    with open(path, "r", encoding="utf-8") as f:
-        lines = f.readlines()
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            lines = f.readlines()
+    except Exception as e:
+        print(e)
+        return []
     total_chars = 0
     line_map = [0]
     for line in lines:
         line_map.append(total_chars)
         total_chars += len(line)
     code_string = "".join(lines)
-    tree = ast.parse(code_string)
+    try:
+        tree = ast.parse(code_string)
+    except Exception as e:
+        print(e)
+        return []
     chunk_start = None
     chunk_end = None
     nodes = _flatten_large_classes(
