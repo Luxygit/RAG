@@ -12,7 +12,7 @@ from src.validating import MinimalSource, MinimalSearchResults
 
 def load_index(file_path: Path) -> dict[str, Any]:
     """opening our content index file back to memory"""
-    if not isinstance(filepath, Path) or not file_path.is_file():
+    if not isinstance(file_path, Path) or not file_path.is_file():
         return {}
     try:
         with tqdm(total=1, desc="Loading BM25 index") as pbar:

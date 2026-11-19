@@ -7,7 +7,7 @@ import uuid
 
 class MinimalSource(BaseModel):
     """this will hold a single retrieved text snippet"""
-    file_path: str = Field(..., min_length=2)
+    file_path: str = Field(..., min_length=1)
     first_character_index: int = Field(..., ge=0)
     last_character_index: int = Field(..., ge=0)
 
@@ -15,13 +15,13 @@ class MinimalSource(BaseModel):
 class UnansweredQuestion(BaseModel):
     """this is a before-response question"""
     question_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    question: str = Field(..., min_length=2)
+    question: str = Field(..., min_length=1)
 
 
 class AnsweredQuestion(UnansweredQuestion):
     """this is the question plus the answer and sources"""
     sources: list[MinimalSource]
-    answer: str = Field(..., min_length=2)
+    answer: str = Field(..., min_length=1)
 
 
 class RagDataset(BaseModel):
@@ -44,10 +44,10 @@ class MinimalAnswer(MinimalSearchResults):
 class StudentSearchResults(BaseModel):
     """represents search results"""
     search_results: list[MinimalSearchResults]
-    k: int
+    k: int = Field(..., gt=0)
 
 
 class StudentSearchResultsAndAnswer(BaseModel):
     """this will be a search result with answers"""
     search_results: list[MinimalAnswer]
-    k: int
+    k: int = Field(..., gt=0)

@@ -4,13 +4,12 @@
 
 ## Description
 
-RAG TODO LIST:
-- OUTPUT
-- README
-- Docstrings
-- flake8 . add .ignore dirs src
-- mypy . add .ignore dirs sr
-- Make run needs to run the whole pipeline?
+RAG Against the MAchine is a command line Retrieval Augmented Generation RAG
+tool written in Python. Its goal is to answer technical questions about a
+local databse and documentation data.
+It works in three stages:
+- Indexing: splits .py .md .txt files into character indexed chunks and builds
+a BM25 inverted index saved as JSON
 
 ## Instructions
 

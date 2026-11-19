@@ -46,10 +46,13 @@ def index(max_chunk_size: int = 2000) -> None:
             if ".venv" not in p.parts and ".git" not in p.parts
             ]
     for path in tqdm(paths, desc="Chunking raw files"):
-        if path.suffix in {".md", ".txt"}:
-            all_chunks.extend(chunk_markdown(path, max_chunk_size))
-        else:
-            all_chunks.extend(chunk_py(path, max_chunk_size))
+        try:
+            if path.suffix in {".md", ".txt"}:
+                all_chunks.extend(chunk_markdown(path, max_chunk_size))
+            else:
+                all_chunks.extend(chunk_py(path, max_chunk_size))
+        except Exception:
+            continue
     save_dir = Path("data/processed")
     build_and_save_index(all_chunks, save_dir)
     print(f"Saved processed {len(all_chunks)} chunks")
@@ -264,14 +267,16 @@ def answer_dataset(
         save_dir.mkdir(parents=True, exist_ok=True)
         with open(save_dir / input_file.name, "w", encoding="utf-8") as f:
             f.write(formatted_answer.model_dump_json(indent=4))
-            print("Saved Student Search Restuls and Answer to file")
+            print("Loaded all questions")
+            print("Saved Student Search Results and Answer to"
+                  f" {save_dir}/{input_file.name}")
     except Exception as e:
         print(f"could not save results to file {e}")
         return
 
 
 def main() -> None:
-    """entry point for all the RAC CLI commands"""
+    """entry point for all the RAG CLI commands"""
     try:
         # exposing functions as CLI commands
         fire.Fire({

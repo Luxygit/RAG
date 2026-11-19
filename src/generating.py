@@ -123,7 +123,7 @@ def generate_answer(
                     self.gen_pbar.update(self.gen_pbar.total)
                 self.gen_pbar.refresh()
                 self.gen_pbar.close()
-    
+
     # chat roles structure and retrieved context for qwen
     messages: list[dict[str, str]] = [
             {
@@ -136,21 +136,13 @@ def generate_answer(
                 },
             ]
     try:
-        try:
-            # single prompt string, disable <think> blocks
-            prompt: str = tokenizer.apply_chat_template(
-                    messages,
-                    tokenize=False,
-                    add_generation_prompt=True,
-                    enable_thinking=False,
-                    )
-        except TypeError:
-            # fallback if another model tokenizer lacks enable_thinking
-            prompt = tokenizer.apply_chat_template(
-                    messages,
-                    tokenize=False,
-                    add_generation_prompt=True,
-                    )
+        # single prompt string, disable <think> blocks
+        prompt: str = tokenizer.apply_chat_template(
+                messages,
+                tokenize=False,
+                add_generation_prompt=True,
+                enable_thinking=False,
+                )
         # prompt to pytorch tensors pt
         inputs = tokenizer(prompt, return_tensors="pt").to(model.device)
         # attach hooks to 28 decoder layers to track prefill
@@ -187,7 +179,7 @@ def generate_answer(
             if not prefill_pbar.disable:
                 prefill_pbar.close()
         # outputs[0] contains prompttokens + answertokens
-        prompt_len = inputs["input_ids"].shape[1]
+        prompt_len = len(inputs["input_ids"][0])
         new_tokens = outputs[0][prompt_len:]
         # convert generated token iks back to text without special tags
         answer: str = tokenizer.decode(
