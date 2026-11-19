@@ -1,8 +1,9 @@
 """main execution of the module"""
 
 
-import fire
+import fire  # type: ignore[import-untyped]
 import json
+import sys
 from tqdm import tqdm
 from pathlib import Path
 from pydantic import ValidationError
@@ -21,16 +22,25 @@ from src.generating import generate_answer, load_model
 
 def index(max_chunk_size: int = 2000) -> None:
     """executes chunking and indexin pipeline"""
-    if max_chunk_size <= 0:
+    if (
+            isinstance(max_chunk_size, bool)
+            or not isinstance(max_chunk_size, int)
+            or max_chunk_size <= 0
+            ):
         return
     all_chunks = []
     target_dir = Path("data/raw/")
     if not target_dir.is_dir():
         print("Invalid target folder path")
         return
-    paths_py = list(target_dir.rglob("*.py"))
-    paths_txt = list(target_dir.rglob("*.txt"))
-    paths_md = list(target_dir.rglob("*.md"))
+    try:
+        paths_py = list(target_dir.rglob("*.py"))
+        paths_txt = list(target_dir.rglob("*.txt"))
+        paths_md = list(target_dir.rglob("*.md"))
+    except Exception as e:
+        print(f"Error scanning dir: {e}")
+        return
+    # skip hidden venv and git dirs
     paths = [
             p for p in (paths_md + paths_py + paths_txt)
             if ".venv" not in p.parts and ".git" not in p.parts
@@ -46,44 +56,61 @@ def index(max_chunk_size: int = 2000) -> None:
 
 
 def search(query: str, k: int = 5) -> None:
-    """"""
-    if not query.strip() or k <= 0:
+    """runs a single BM25 search and prints JSON results"""
+    if (
+        not isinstance(query, str)
+        or not isinstance(k, int)
+        or isinstance(k, bool)
+        or not query.strip()
+        or k <= 0
+    ):
         print("No valid query or no valid k int")
         return
-    target_dir = Path("data/processed/bm25_index.json")
-    if not target_dir.is_dir():
+    index_path = Path("data/processed/bm25_index.json")
+    if not index_path.is_file():
         print("No valid target path")
         return
     try:
-        index_data = load_index(target_dir)
-    # searchindex returns a list of raw dicts[MinimalSource]
+        index_data = load_index(index_path)
+        # searchindex returns a list of raw dicts[MinimalSource]
         results = search_index(query, index_data, k)
-    except Exception as e:
-        print(e)
-        return
-    # expplain this
-    retrieved_sources = [MinimalSource(**chunk) for chunk in results]
-    min_search = MinimalSearchResults(
+        # **chunk unpacks dict keys into MinimalSource(file_path=...)
+        retrieved_sources = [MinimalSource(**chunk) for chunk in results]
+        # wrap the single query and its top-k sources into the schema
+        min_search = MinimalSearchResults(
             question_id="q1",
             question=query,
             retrieved_sources=retrieved_sources)
+    except Exception as e:
+        print(e)
+        return
+    # outer schema required by subject
     student_res = StudentSearchResults(
             search_results=[min_search],
             k=k
             )
+    # model_dump_json turns pydantic models into a json string
     print(student_res.model_dump_json(indent=4))
 
 
 def search_dataset(dataset_path: str, k: int, save_directory: str) -> None:
     """runs search over a dataset and saves results to json"""
-    # loading dataset and bm25 index
-    if k <= 0:
-        print("k should be a positive int")
+    # loading dataset and bm25 index and saves results to json
+    if (
+        not isinstance(dataset_path, (str, Path))
+        or not str(dataset_path).strip()
+        or not isinstance(save_directory, (str, Path))
+        or not str(save_directory).strip()
+        or isinstance(k, bool)
+        or not isinstance(k, int)
+        or k <= 0
+    ):
+        print("Invalid arguments for search_dataset")
         return
     try:
         with open(dataset_path, "r", encoding="utf-8") as f:
             dataset = json.load(f)
-    except (OSError, json.JSONDecodeError):
+    except (OSError, json.JSONDecodeError, TypeError):
         print("Error opening file")
         return
     index_path = Path("data/processed/bm25_index.json")
@@ -97,21 +124,32 @@ def search_dataset(dataset_path: str, k: int, save_directory: str) -> None:
         return
     search_results_list = []
     # looping through questions, either raw lists or dicts
-    questions = dataset.get(
-            "rag_questions",
-            dataset) if isinstance(dataset, dict) else dataset
+    questions = (
+            dataset.get("rag_questions", dataset)
+            if isinstance(dataset, dict)
+            else dataset
+            )
+    if not isinstance(questions, list):
+        return
     for item in tqdm(questions, desc="Searching datasets"):
-        q_id = item.get("question_id", "q1")
-        q_text = item.get("question", "")
-        # run search engine
-        raw_chunks = search_index(q_text, index_data, k)
-        retrieved_sources = [MinimalSource(**chunk) for chunk in raw_chunks]
-        min_search = MinimalSearchResults(
-                question_id=q_id,
-                question=q_text,
-                retrieved_sources=retrieved_sources,
-                )
-        search_results_list.append(min_search)
+        if not isinstance(item, dict):
+            continue
+        try:
+            q_id = str(item.get("question_id") or "q1")
+            q_text = str(item.get("question") or "")
+            # run search engine
+            raw_chunks = search_index(q_text, index_data, k)
+            # unpack each chunk dict into a validated MinimalSource
+            retrieved_sources = [
+                    MinimalSource(**chunk) for chunk in raw_chunks]
+            min_search = MinimalSearchResults(
+                    question_id=q_id,
+                    question=q_text,
+                    retrieved_sources=retrieved_sources,
+                    )
+            search_results_list.append(min_search)
+        except Exception:
+            continue
     # packaging into StudentSearchResults
     student_res = StudentSearchResults(
             search_results=search_results_list,
@@ -119,6 +157,7 @@ def search_dataset(dataset_path: str, k: int, save_directory: str) -> None:
     # turning string into Path object
     try:
         save_dir = Path(save_directory)
+        # create parent folders if missing without failing if they exist
         save_dir.mkdir(parents=True, exist_ok=True)
         output_file = save_dir / Path(dataset_path).name
         with open(output_file, "w", encoding="utf-8") as f:
@@ -130,8 +169,14 @@ def search_dataset(dataset_path: str, k: int, save_directory: str) -> None:
 
 
 def answer(query: str, k: int = 5) -> None:
-    """"""
-    if not query.strip() or k <= 0:
+    """answers a single query using retrieved context and prints JSON"""
+    if (
+        not isinstance(query, str)
+        or not isinstance(k, int)
+        or isinstance(k, bool)
+        or not query.strip()
+        or k <= 0
+    ):
         print("No valid query or no valid k int")
         return
     index_path = Path("data/processed/bm25_index.json")
@@ -141,12 +186,16 @@ def answer(query: str, k: int = 5) -> None:
     try:
         index_data = load_index(index_path)
         src = search_index(query, index_data, k)
+        # unpack retrieved dicst into MinimalSource for type safety
         sources = [MinimalSource(**chunk) for chunk in src]
         tokenizer, model = load_model()
+        if tokenizer is None or model is None:
+            return
         gen_ans = generate_answer(query, sources, tokenizer, model)
     except Exception as e:
         print(e)
         return
+    # MinimalAnswer inherits from MinimalSearchResults and adds 'answer'
     ans = MinimalAnswer(
             question_id="q1",
             question=query,
@@ -161,7 +210,15 @@ def answer_dataset(
         student_search_results_path: str,
         save_directory: str
         ) -> None:
-    """"""
+    """generates answers for a search results dataset and saved to json"""
+    if (
+        not isinstance(student_search_results_path, (str, Path))
+        or not str(student_search_results_path).strip()
+        or not isinstance(save_directory, (str, Path))
+        or not str(save_directory).strip()
+    ):
+        print("Invalid arguments for answer_dataset")
+        return
     input_file = Path(student_search_results_path)
     if not input_file.is_file():
         print("Invalid input file")
@@ -176,24 +233,29 @@ def answer_dataset(
         return
     try:
         tokenizer, model = load_model()
+        if tokenizer is None or model is None:
+            return
     except Exception as e:
         print(e)
         return
     list_ans: list[MinimalAnswer] = []
     for item in tqdm(search_data.search_results, desc="Generating answers"):
         q_text = item.question
-        ans_text = generate_answer(
-                q_text,
-                item.retrieved_sources,
-                tokenizer,
-                model)
-        answer = MinimalAnswer(
+        try:
+            ans_text = generate_answer(
+                    q_text,
+                    item.retrieved_sources,
+                    tokenizer,
+                    model)
+        except Exception:
+            ans_text = ""
+        ans_item = MinimalAnswer(
                 question_id=item.question_id,
                 question=q_text,
                 retrieved_sources=item.retrieved_sources,
                 answer=ans_text
                 )
-        list_ans.append(answer)
+        list_ans.append(ans_item)
     formatted_answer = StudentSearchResultsAndAnswer(
             search_results=list_ans,
             k=search_data.k)
@@ -209,15 +271,22 @@ def answer_dataset(
 
 
 def main() -> None:
-    """initialising master list of chunks and calling the chunk functions"""
-    fire.Fire({
-        "index": index,
-        "search": search,
-        "search_dataset": search_dataset,
-        "evaluate": evaluate,
-        "answer": answer,
-        "answer_dataset": answer_dataset,
-        })
+    """entry point for all the RAC CLI commands"""
+    try:
+        # exposing functions as CLI commands
+        fire.Fire({
+            "index": index,
+            "search": search,
+            "search_dataset": search_dataset,
+            "evaluate": evaluate,
+            "answer": answer,
+            "answer_dataset": answer_dataset,
+            })
+    except KeyboardInterrupt:
+        print("\nProcess interrupted", file=sys.stderr)
+        sys.exit(130)
+    except BrokenPipeError:
+        sys.exit(0)
 
 
 if __name__ == "__main__":

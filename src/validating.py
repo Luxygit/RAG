@@ -31,8 +31,8 @@ class RagDataset(BaseModel):
 
 class MinimalSearchResults(BaseModel):
     """search results"""
-    question_id: str | None
-    question: str | None
+    question_id: str
+    question: str
     retrieved_sources: list[MinimalSource]
 
 

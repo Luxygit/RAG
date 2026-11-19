@@ -1,7 +1,7 @@
 [project]
 name = "rag"
 version = "0.1.0"
-description = "Add your description here"
+description = "RAG against the machine project"
 readme = "README.md"
 requires-python = ">=3.14"
 dependencies = [
@@ -12,7 +12,14 @@ dependencies = [
     "torch>=2.15.0",
     "tqdm>=4.70.1",
     "transformers>=5.23.0",
+    "types-tqdm>=4.70.0.20261106",
 ]
+[tool.uv.sources]
+torch = [{ index = "pytorch-cpu"}]
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
 [tool.mypy]
 files = ["src"]
 exclude = ["data/"]

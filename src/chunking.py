@@ -12,7 +12,7 @@ def _flatten_large_classes(
     lines: list[str],
     chunk_size: int,
    ) -> list[ast.stmt]:
-    """"""
+    """unpacks class bodies into methods when a class > chunk_size"""
     flattened: list[ast.stmt] = []
     for node in nodes:
         if isinstance(node, ast.ClassDef) and node.end_lineno is not None:
@@ -37,7 +37,13 @@ def chunk_markdown(
     curr_pos tracks the position in file during the loop
     p_start p_end the boundaries of the current paragraph
     """
-    if chunk_size <= 0:
+    if (
+        not isinstance(path, Path)
+        or isinstance(chunk_size, bool)
+        or not isinstance(chunk_size, int)
+        or chunk_size <= 0
+        or not path.is_file()
+    ):
         return []
     chunks = []
     try:
@@ -104,7 +110,13 @@ def chunk_py(
         chunk_size: int = 2000
         ) -> list[MinimalSource]:
     """using ast lib to get a py file tree and branches"""
-    if chunk_size <= 0:
+    if (
+        not isinstance(path, Path)
+        or isinstance(chunk_size, bool)
+        or not isinstance(chunk_size, int)
+        or chunk_size <= 0
+        or not path.is_file()
+    ):
         return []
     chunks = []
     try:
