@@ -1,7 +1,7 @@
 """main execution of the module"""
 
 
-import fire  # type: ignore[import-untyped]
+import fire
 import json
 import sys
 from tqdm import tqdm
@@ -27,6 +27,7 @@ def index(max_chunk_size: int = 2000) -> None:
             or not isinstance(max_chunk_size, int)
             or max_chunk_size <= 0
             ):
+        print("Invalid max_chunk_size: must be positive int")
         return
     all_chunks = []
     target_dir = Path("data/raw/")
@@ -54,8 +55,8 @@ def index(max_chunk_size: int = 2000) -> None:
         except Exception:
             continue
     save_dir = Path("data/processed")
-    build_and_save_index(all_chunks, save_dir)
-    print(f"Saved processed {len(all_chunks)} chunks")
+    if build_and_save_index(all_chunks, save_dir):
+        print(f"Saved processed {len(all_chunks)} chunks")
 
 
 def search(query: str, k: int = 5) -> None:

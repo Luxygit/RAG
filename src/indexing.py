@@ -34,7 +34,7 @@ def tokenise(text: str) -> list[str]:
     return tokens
 
 
-def build_and_save_index(chunks: list[MinimalSource], save_dir: Path) -> None:
+def build_and_save_index(chunks: list[MinimalSource], save_dir: Path) -> bool:
     """
     reads file slices, tokenises them with some maths into a JSON
     """
@@ -93,6 +93,7 @@ def build_and_save_index(chunks: list[MinimalSource], save_dir: Path) -> None:
         save_dir.mkdir(parents=True, exist_ok=True)
         with open(save_dir / "bm25_index.json", "w", encoding="utf-8") as fj:
             json.dump(index_data, fj)
+        return True
     except Exception as e:
-        print(e)
-        return
+        print(f"Error saving index: {e}")
+        return False

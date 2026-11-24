@@ -27,7 +27,7 @@ def read_source(source: MinimalSource) -> str:
         return ""
 
 
-def build_context(sources: list[MinimalSource], max_chars: int = 1500) -> str:
+def build_context(sources: list[MinimalSource], max_chars: int = 2000) -> str:
     """building the prompt that will be given to the model"""
     context: list[str] = []
     total_chars = 0
@@ -36,9 +36,15 @@ def build_context(sources: list[MinimalSource], max_chars: int = 1500) -> str:
         if not piece.strip():
             continue
         header = f"[Source {i}: {s.file_path}]"
-        # capping total prompt size to keep CPU prefill fast
-        if total_chars + len(piece) + len(header) >= max_chars:
+        # header + \n\n separators (4 chars)
+        remaining = max_chars - total_chars - len(header) - 4
+        if remaining <= 0:
             break
+        if len(piece) > remaining:
+            if not context:
+                piece = piece[:remaining]
+            else:
+                break
         context.append(header)
         context.append(piece)
         total_chars += len(piece) + len(header) + 4

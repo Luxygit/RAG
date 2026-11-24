@@ -73,7 +73,7 @@ def evaluate(student_search_results_path: Path, dataset_path: Path) -> float:
     except Exception as e:
         print(e)
         return 0.0
-    if len(student_list) == 0:
+    if len(golden_list) == 0:
         return 0.0
-    recall = correct_count / len(student_list)
+    recall = correct_count / len(golden_list)
     return recall

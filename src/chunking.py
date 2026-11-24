@@ -57,6 +57,9 @@ def chunk_markdown(
     chunk_start: int | None = None
     chunk_end: int | None = None
     for p in paragraphed:
+        if not p.strip():
+            curr_pos += len(p) + 2
+            continue
         p_start = curr_pos
         p_end = curr_pos + len(p)
         is_heading = p.lstrip().startswith("#")

@@ -1,12 +1,12 @@
 *This project has been created as part of the 42 curriculum by dievarga*
 
-# RAG against the machine
+# RAG Against the Machine
 
 ## Description
 
-RAG Against the MAchine is a command line Retrieval Augmented Generation RAG
+RAG Against the Machine is a command line Retrieval Augmented Generation RAG
 tool written in Python. Its goal is to answer technical questions about a
-local databse and documentation data.
+local database and documentation data.
 It works in three stages:
 - Indexing: splits .py .md .txt files into character indexed chunks and builds
 a BM25 inverted index saved as JSON
@@ -21,7 +21,7 @@ produce grounded answers formatted as validated Pydantic JSON schemas.
 ### Makefile targets
 
 - make install      : create the .venv and install dependencies via uv sync
-- make run          : run the project uv run python -m src <command> [options]
+- make run          : run the whole rag program pipeline
 - make debug        : run the project under pdb pythons debugger __main__.py
 - make clean        : remove caches and temp files
 - make lint         : run flake8 . and mypy . to check src/ files
@@ -40,7 +40,7 @@ generating text
 - tqdm shows progress bars for visual feedback on operations
 
 ### Debugging
-Using make debug' we got access to pythons debugger to examine the program:
+Using make debug we got access to pythons debugger to examine the program:
 - n (Next): Executes the current line and moves to the next line
 - s (Step): Steps inside a function call
 - c (Continue): Lets the program run normally until it hits a crash or finishes
@@ -50,11 +50,11 @@ Using make debug' we got access to pythons debugger to examine the program:
 
 ### Execution
 
-make run - executes the whole pipeline and produces the answer for one question via RAG and model calls. It also installs dependencies if missing.
+make run - executes the whole RAG pipeline including the Moulinette tester as required.It also installs dependencies if missing.
 Mandatory CLI command and options:
 - indexing the raw dataset and saving it to data/processed/
 uv run python -m src index
-    -max_chunk_size [int]: 
+    -max_chunk_size [int] 
 - returning the top k sources for a query
 uv run python -m src search [query]
     -k [int]
@@ -75,9 +75,9 @@ uv run python -m src evaluate
     -student_search_results_path [student results path]
     -dataset_path [dataset path]
 
-Common erros such as missing files, invalid paths, file permit errors,
+Common erros such as missing files, invalid paths, file permission errors,
 duplicates, among others specified by the subject are handled via Pydantic and
-try excepts blocks.
+try except blocks.
 
 ## Resources
 
@@ -117,7 +117,7 @@ describes what it does.
 - evaluating.py Measures retrieval accuracy (Recall@k via IoU)
 - generating.py Sends top chunks + question to Qwen3-0.6B on CPU to generate an answer
 - validating.py Validates all inputs/outputs with Pydantic and prints clean JSON
-The __main__.py in src/ executes the principal functions of the project that are required by the subject via CLI commands as descrbied above in the Execution section.
+The __main__.py in src/ executes the principal functions of the project that are required by the subject via CLI commands as described above in the Execution section.
 
 The RAG pipeline has four stages:
 - Indexing: organise the data so it can be searched.
@@ -132,10 +132,10 @@ Chunking was structured in 2 separate functions depending on the type of file:
 - Markdown and Text files are split by paragraph boundaries (\n\n) and md headings (#).
 Paragraphs are grouped together until the next one would pass the max chunk size set by default at 2000 chars or there is a new heading section.
 - Python code files were mapped with a native AST module that turns them into 
-abstract syntax trees that show where every import, def and cass starts and ends.
+abstract syntax trees that show where every import, def and class starts and ends.
 This way grouping complete functions and classes and flattening to split it into methods in case one class is too big.
 
-Every chunk saves its first char indx and last char index and file path so that its content can be found later.
+Every chunk saves its first char index and last char index and file path so that its content can be found later.
 
 ### Retrieval Method
 
@@ -149,17 +149,17 @@ An inverted Okapi BM25 index is used to find the best chunks for a question.
         diminishing returns
     - Length Normalisation: short chunks that match, score higher than huge chunks
 
-### Performance Analysisis
+### Performance Analysis
 
 - Retrieval speed: using only simple math and python dictionaries with BM25 searching 200 questions can take only a few seconds (~3 sec).
-- Recall@k Evaluation: Quality is measured using Intersection over Union between the program retrieved character spans and the ground truth answer spans. A question counts as a hit if at least one of the top-k chunks comes fro mthe right file and overlaps by IoU >= 0.05.
+- Recall@k Evaluation: Quality is measured using Intersection over Union between the program retrieved character spans and the ground truth answer spans. A question counts as a hit if at least one of the top-k chunks comes from the right file and overlaps by IoU >= 0.05. IoU is calculated dividing the overlap of both data character spans by their total covered area. 0 means no overlap and 1 is a exact match.
 - Generation speed: Running Qwen3-0.6B on CPU takes about 15 seconds per question so getting answers from the model for 200 questions would take about 50 minutes.
 
 ### Design Decisions
 
 - Lazy ML imports: torch and transformers are imported inside load_model() so that when running commands that do not need these modules are executed faster.
 - float32 vs bfloat16 on CPU: Testing shows that some CPUs without native instructions have to emulate bfloat16 making the processing slower so torch.float32 was chosen.
-- Grounded greedy decoding: using model.eval() torch.no_grad() do_sample=False and enable_thinking=False with a 1500 char context limit so that the model produces a fast, concise, grounded answer without <think> blocks.
+- Grounded greedy decoding: using model.eval() torch.no_grad() do_sample=False and enable_thinking=False with a 2000 char context limit so that the model produces a fast, concise, grounded answer without <think> blocks.
 
 ### Challenges Faced
 
