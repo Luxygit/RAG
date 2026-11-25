@@ -84,7 +84,7 @@ def generate_answer(
         question: str,
         sources: list[MinimalSource],
         tokenizer: Any,
-        model: Any
+        model: Any,
         ) -> str:
     """generates answer from sources"""
     if not question.strip():
@@ -100,7 +100,7 @@ def generate_answer(
     # BaseStreamer gets callbacks from model.generate() every step
     class _ProgressStreamer(BaseStreamer):
         """updates a tqdm bar as tokens are generated"""
-        def __init__(self, tokens: int = 256) -> None:
+        def __init__(self, tokens: int = 512) -> None:
             """initializes the prompt prefill progress bar"""
             self.max_tokens = tokens
             # first put() passes the input prompt, not a generated token
@@ -174,9 +174,9 @@ def generate_answer(
             with torch.no_grad():
                 outputs = model.generate(
                         **inputs,
-                        max_new_tokens=256,
+                        max_new_tokens=512,
                         do_sample=False,
-                        streamer=_ProgressStreamer(tokens=256)
+                        streamer=_ProgressStreamer(tokens=512)
                     )
         finally:
             # always removing hooks in future calls

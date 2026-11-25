@@ -159,7 +159,7 @@ An inverted Okapi BM25 index is used to find the best chunks for a question.
 
 - Lazy ML imports: torch and transformers are imported inside load_model() so that when running commands that do not need these modules are executed faster.
 - float32 vs bfloat16 on CPU: Testing shows that some CPUs without native instructions have to emulate bfloat16 making the processing slower so torch.float32 was chosen.
-- Grounded greedy decoding: using model.eval() torch.no_grad() do_sample=False and enable_thinking=False with a 2000 char context limit so that the model produces a fast, concise, grounded answer without <think> blocks.
+- Grounded greedy decoding: using model.eval() torch.no_grad() do_sample=False and enable_thinking=False with a 2000 char context limit and 512 max token answer limit so that the model produces a fast, concise, grounded answer without <think> blocks.
 
 ### Challenges Faced
 
