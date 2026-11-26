@@ -4,6 +4,7 @@
 import fire
 import json
 import sys
+from typing import Any
 from tqdm import tqdm
 from pathlib import Path
 from pydantic import ValidationError
@@ -20,8 +21,11 @@ from src.validating import (
 from src.generating import generate_answer, load_model
 
 
-def index(max_chunk_size: int = 2000) -> None:
+def index(max_chunk_size: int = 2000, **kwargs: Any) -> None:
     """executes chunking and indexin pipeline"""
+    if kwargs:
+        print("Unknown args")
+        return
     if (
             isinstance(max_chunk_size, bool)
             or not isinstance(max_chunk_size, int)
@@ -56,11 +60,14 @@ def index(max_chunk_size: int = 2000) -> None:
             continue
     save_dir = Path("data/processed")
     if build_and_save_index(all_chunks, save_dir):
-        print(f"Saved processed {len(all_chunks)} chunks")
+        print(f"Saved {len(all_chunks)} chunks in data/processed/\n")
 
 
-def search(query: str, k: int = 5) -> None:
+def search(query: str | None = None, k: int = 5, **kwargs: Any) -> None:
     """runs a single BM25 search and prints JSON results"""
+    if kwargs:
+        print("Unknown args")
+        return
     if (
         not isinstance(query, str)
         or not isinstance(k, int)
@@ -97,8 +104,14 @@ def search(query: str, k: int = 5) -> None:
     print(student_res.model_dump_json(indent=4))
 
 
-def search_dataset(dataset_path: str, k: int, save_directory: str) -> None:
+def search_dataset(
+        dataset_path: str | None = None,
+        k: int = 5,
+        save_directory: str | None = None, **kwargs: Any) -> None:
     """runs search over a dataset and saves results to json"""
+    if kwargs:
+        print("Unknown args")
+        return
     # loading dataset and bm25 index and saves results to json
     if (
         not isinstance(dataset_path, (str, Path))
@@ -115,7 +128,7 @@ def search_dataset(dataset_path: str, k: int, save_directory: str) -> None:
         with open(dataset_path, "r", encoding="utf-8") as f:
             dataset = json.load(f)
     except (OSError, json.JSONDecodeError, TypeError):
-        print("Error opening file")
+        print(f"Error opening file {dataset_path}")
         return
     index_path = Path("data/processed/bm25_index.json")
     if not index_path.is_file():
@@ -166,14 +179,17 @@ def search_dataset(dataset_path: str, k: int, save_directory: str) -> None:
         output_file = save_dir / Path(dataset_path).name
         with open(output_file, "w", encoding="utf-8") as f:
             f.write(student_res.model_dump_json(indent=4))
-        print(f"Saved student_search_results to {output_file}")
+        print(f"Saved student_search_results to {output_file}\n")
     except Exception as e:
         print(e)
         return
 
 
-def answer(query: str, k: int = 5) -> None:
+def answer(query: str | None = None, k: int = 5, **kwargs: Any) -> None:
     """answers a single query using retrieved context and prints JSON"""
+    if kwargs:
+        print("Unknown args")
+        return
     if (
         not isinstance(query, str)
         or not isinstance(k, int)
@@ -211,10 +227,13 @@ def answer(query: str, k: int = 5) -> None:
 
 
 def answer_dataset(
-        student_search_results_path: str,
-        save_directory: str
-        ) -> None:
+        student_search_results_path: str | None = None,
+        save_directory: str | None = None,
+        **kwargs: Any) -> None:
     """generates answers for a search results dataset and saved to json"""
+    if kwargs:
+        print("Unknown args")
+        return
     if (
         not isinstance(student_search_results_path, (str, Path))
         or not str(student_search_results_path).strip()
@@ -243,14 +262,21 @@ def answer_dataset(
         print(e)
         return
     list_ans: list[MinimalAnswer] = []
-    for item in tqdm(search_data.search_results, desc="Generating answers"):
+    for item in tqdm(
+            search_data.search_results,
+            desc="Generating answers",
+            unit="question",
+            position=0,
+            leave=True,):
         q_text = item.question
         try:
             ans_text = generate_answer(
                     q_text,
                     item.retrieved_sources,
                     tokenizer,
-                    model)
+                    model,
+                    leave_bars=False,
+                    )
         except Exception:
             ans_text = ""
         ans_item = MinimalAnswer(
@@ -269,7 +295,7 @@ def answer_dataset(
         with open(save_dir / input_file.name, "w", encoding="utf-8") as f:
             f.write(formatted_answer.model_dump_json(indent=4))
             print("Loaded all questions")
-            print("Saved Student Search Results and Answer to"
+            print("Saving Student Search Results and Answer to"
                   f" {save_dir}/{input_file.name}")
     except Exception as e:
         print(f"could not save results to file {e}")
@@ -293,6 +319,9 @@ def main() -> None:
         sys.exit(130)
     except BrokenPipeError:
         sys.exit(0)
+    except Exception as e:
+        print(f"Error: {e}", file=sys.stderr)
+        sys.exit(1)
 
 
 if __name__ == "__main__":

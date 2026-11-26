@@ -90,6 +90,7 @@ def generate_answer(
         sources: list[MinimalSource],
         tokenizer: Any,
         model: Any,
+        leave_bars: bool = True,
         ) -> str:
     """generates answer from sources"""
     if not question.strip():
@@ -106,9 +107,10 @@ def generate_answer(
     # BaseStreamer gets callbacks from model.generate() every step
     class _ProgressStreamer(BaseStreamer):
         """updates a tqdm bar as tokens are generated"""
-        def __init__(self, tokens: int = 512) -> None:
+        def __init__(self, tokens: int = 512, leave: bool = True) -> None:
             """initializes the prompt prefill progress bar"""
             self.max_tokens = tokens
+            self.leave = leave
             # first put() passes the input prompt, not a generated token
             self.is_prompt = True
             self.gen_pbar: Any = None
@@ -122,6 +124,8 @@ def generate_answer(
                 self.gen_pbar = tqdm(
                     total=self.max_tokens,
                     desc="Generating answer",
+                    position=0 if self.leave else 1,
+                    leave=self.leave
                 )
             if self.gen_pbar.n < self.max_tokens:
                 self.gen_pbar.update(1)
@@ -167,6 +171,8 @@ def generate_answer(
         prefill_pbar = tqdm(
                 total=total_layers,
                 desc="Prefilling prompt",
+                position=0 if leave_bars else 1,
+                leave=leave_bars,
                 )
         handles: list[Any] = []
 
@@ -188,7 +194,10 @@ def generate_answer(
                         **inputs,
                         max_new_tokens=512,
                         do_sample=False,
-                        streamer=_ProgressStreamer(tokens=512)
+                        streamer=_ProgressStreamer(
+                            tokens=512,
+                            leave=leave_bars,
+                            )
                     )
         finally:
             # always removing hooks in future question calls

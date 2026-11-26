@@ -56,7 +56,7 @@ def evaluate(student_search_results_path: Path, dataset_path: Path) -> float:
     try:
         golden_list = ground_res["rag_questions"]
         student_list = student_res["search_results"]
-        # index ground sources by question id 
+        # index ground sources by question id
         for item in golden_list:
             truth_map[item["question_id"]] = item["sources"]
         for st_res in tqdm(student_list, desc="Evaluating recall"):
