@@ -30,7 +30,6 @@ def load_index(file_path: Path) -> dict[str, Any]:
 def search_index(query: str, index_data: dict[str, Any], k: int
                  ) -> list[dict[str, Any]]:
     """bm25 scoring engine"""
-    # turning the query into a clean string of words
     if (
             not isinstance(query, str)
             or not isinstance(index_data, dict)
@@ -41,25 +40,29 @@ def search_index(query: str, index_data: dict[str, Any], k: int
     ):
         return []
     try:
+        # turning the query into a clean string of words like those in index
         tk_query = tokenise(query)
+        # unpacking the lookup tables from the index
         doc_lengths = index_data["doc_lengths"]
         avgdl = index_data["avgdl"]
         doc_freqs = index_data["doc_freqs"]
         term_freqs = index_data["term_freqs"]
         chunks = index_data["chunks"]
+        # total number of indexed chunks
         N = len(chunks)
         if not chunks or avgdl <= 0:
             return []
         # control term freq saturation, so words dont scale infinitely
         k1 = 1.5
-        # controls how we penalise long doc lengths
+        # controls how we penalise docs longer than average
         b = 0.75
-        # scores include {chunk_id: relevancefloat}
+        # scoring each matching chunk {chunk_id: floatscore}
         scores: dict[int, float] = {}
         for w in tk_query:
+            # skip query words that dont appear in the index
             if w not in doc_freqs:
                 continue
-            # inverse document frequency
+            # rare words accross the dataset get higher IDF weight
             idf = math.log(
                     ((N - doc_freqs[w] + 0.5) / (doc_freqs[w] + 0.5)) + 1)
             for chunk_id_str, tf in term_freqs[w].items():
