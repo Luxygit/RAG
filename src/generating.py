@@ -29,17 +29,21 @@ def read_source(source: MinimalSource) -> str:
 
 def build_context(sources: list[MinimalSource], max_chars: int = 2000) -> str:
     """building the prompt that will be given to the model"""
+    # formatted [source 0: path] header and text
     context: list[str] = []
+    # tracks total chars needed so always below max_chars
     total_chars = 0
     for i, s in enumerate(sources, start=1):
         piece = read_source(s)
+        # skips empty chunks
         if not piece.strip():
             continue
         header = f"[Source {i}: {s.file_path}]"
-        # header + \n\n separators (4 chars)
+        # calc char budget knowing header + \n\n separators (4 chars)
         remaining = max_chars - total_chars - len(header) - 4
         if remaining <= 0:
             break
+        # if chunk doesnt fit trim it if context empty, else stop adding
         if len(piece) > remaining:
             if not context:
                 piece = piece[:remaining]
@@ -48,6 +52,7 @@ def build_context(sources: list[MinimalSource], max_chars: int = 2000) -> str:
         context.append(header)
         context.append(piece)
         total_chars += len(piece) + len(header) + 4
+    # join headers and snippets into a context block
     return "\n\n".join(context)
 
 
@@ -65,7 +70,7 @@ def load_model(model_name: str = "Qwen/Qwen3-0.6B") -> tuple[Any, Any]:
         tokenizer.padding_side = "left"
         if tokenizer.pad_token is None:
             tokenizer.pad_token = tokenizer.eos_token
-        # loading causal weights
+        # loading causal weights of qwen
         model: Any = AutoModelForCausalLM.from_pretrained(
                 model_name,
                 dtype=torch.float32,
@@ -91,6 +96,7 @@ def generate_answer(
         return ""
     if tokenizer is None or model is None:
         return ""
+    # build 2000 char context from retrieved chunks
     context = build_context(sources)
     if not context.strip():
         return ""
@@ -108,7 +114,7 @@ def generate_answer(
             self.gen_pbar: Any = None
 
         def put(self, value: Any) -> None:
-            """finishes prefill bar and ticks token generation bar"""
+            """finishes prefill bar and ticks new token generation bar"""
             if self.is_prompt:
                 self.is_prompt = False
                 return
@@ -121,7 +127,7 @@ def generate_answer(
                 self.gen_pbar.update(1)
 
         def end(self) -> None:
-            """snaps active bars to 100% and closes them cleanly"""
+            """snaps active bars to 100% and closes them at early EOS"""
             if self.gen_pbar is not None:
                 if self.gen_pbar.n > 0:
                     self.gen_pbar.total = self.gen_pbar.n
@@ -131,6 +137,7 @@ def generate_answer(
                 self.gen_pbar.close()
 
     # chat roles structure and retrieved context for qwen
+    # structure instructions + retrieved context + questions
     messages: list[dict[str, str]] = [
             {
                 "role": "system",
@@ -142,14 +149,17 @@ def generate_answer(
                 },
             ]
     try:
-        # single prompt string, disable <think> blocks
+        # format into Qwen prompt first step, disable <think> blocks
+        # tokenize false so HF doesnt turn the prompt in numbers yet
+        # addgenerationprompt adds an answer block at the end
         prompt: str = tokenizer.apply_chat_template(
                 messages,
                 tokenize=False,
                 add_generation_prompt=True,
                 enable_thinking=False,
                 )
-        # prompt to pytorch tensors pt
+        # turning prompt into pytorch tensors pt
+        # return tensors grid pt will be input into model generate
         inputs = tokenizer(prompt, return_tensors="pt").to(model.device)
         # attach hooks to 28 decoder layers to track prefill
         layers = getattr(getattr(model, "model", None), "layers", [])
@@ -170,7 +180,9 @@ def generate_answer(
             handles.append(layer.register_forward_hook(_prefill_hook))
         # do_sample keeps answers grounded, greedy decoding
         try:
-            # disable autograd to save RAM
+            # disable autograd to save RAM do_sample stops creativity
+            # progress streamers inherits from basestreamer which is a
+            # transformers hook activated every time a token is produced
             with torch.no_grad():
                 outputs = model.generate(
                         **inputs,
@@ -179,15 +191,15 @@ def generate_answer(
                         streamer=_ProgressStreamer(tokens=512)
                     )
         finally:
-            # always removing hooks in future calls
+            # always removing hooks in future question calls
             for h in handles:
                 h.remove()
             if not prefill_pbar.disable:
                 prefill_pbar.close()
-        # outputs[0] contains prompttokens + answertokens
+        # outputs[0] contains [prompttokens + answertokens]
         prompt_len = len(inputs["input_ids"][0])
         new_tokens = outputs[0][prompt_len:]
-        # convert generated token iks back to text without special tags
+        # convert generated token ids back to text without special tags
         answer: str = tokenizer.decode(
                 new_tokens,
                 skip_special_tokens=True

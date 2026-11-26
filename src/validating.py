@@ -14,6 +14,7 @@ class MinimalSource(BaseModel):
 
 class UnansweredQuestion(BaseModel):
     """this is a before-response question"""
+    # generate a unique ID string if none is given
     question_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     question: str = Field(..., min_length=1)
 
@@ -33,6 +34,7 @@ class MinimalSearchResults(BaseModel):
     """search results"""
     question_id: str
     question: str
+    # ordered ist of topk chunks via BM25
     retrieved_sources: list[MinimalSource]
 
 
