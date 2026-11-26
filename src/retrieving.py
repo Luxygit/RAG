@@ -7,7 +7,6 @@ from typing import Any
 from pathlib import Path
 from tqdm import tqdm
 from src.indexing import tokenise
-from src.validating import MinimalSource, MinimalSearchResults
 
 
 def load_index(file_path: Path) -> dict[str, Any]:
@@ -65,17 +64,23 @@ def search_index(query: str, index_data: dict[str, Any], k: int
             # rare words accross the dataset get higher IDF weight
             idf = math.log(
                     ((N - doc_freqs[w] + 0.5) / (doc_freqs[w] + 0.5)) + 1)
+            # loop over every chunk containing this word
             for chunk_id_str, tf in term_freqs[w].items():
+                # > 1.0 if chunk is longer than average or <1.0 if shorter
                 length_penalty = (
                         1 - b + b * (doc_lengths[chunk_id_str] / avgdl))
+                # combine word count tf with saturation k1 and length penalty
                 tf_score = (tf * (k1 + 1)) / (tf + k1 * length_penalty)
+                # add this word score idf * tfscore to the chunk's total
                 scores[int(chunk_id_str)] = scores.get(
                         int(chunk_id_str), 0.0) + idf * tf_score
+        # sort chunks from highest BM25 to lowest
         ranked = sorted(scores.items(), key=lambda x: x[1], reverse=True)
-        # {chunk_id: score}
+        # keep only the top ones {chunk_id: score}
         top_k_ids = ranked[:k]
         results = []
-        # from the top_k_ids tuple we get the first item (ID) and use it.
+        # from the top_k_ids get the first item (ID) turn them back
+        # into their chunk dictionaries
         for t in top_k_ids:
             chunk_index = t[0]
             results.append(chunks[chunk_index])
@@ -83,12 +88,3 @@ def search_index(query: str, index_data: dict[str, Any], k: int
     except Exception as e:
         print(f"Search error: {e}")
         return []
-
-
-def ranking_chunks(sources: list[MinimalSource]) -> MinimalSearchResults:
-    """wraps an ordered list of MinimalSource objects in search schema"""
-    return MinimalSearchResults(
-           question_id="",
-           question="",
-           retrieved_sources=sources,
-           )
